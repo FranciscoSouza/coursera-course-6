@@ -1,0 +1,96 @@
+---
+output:
+  html_document:
+    keep_md: yes
+  pdf_document: default
+---
+
+```{r global_options, include=FALSE}
+library(knitr)
+opts_chunk$set(fig.width=10, fig.height=8, warning=FALSE, message=FALSE)
+```
+
+# Statistical Inference Course Project 2
+
+## Overview
+Loading the ToothGrowth data to perform a exploratory data analyses:
+1 Basic summary of the data.
+2 Confidence intervals and/or hypothesis tests and compare tooth growth by supp and dose. 
+3 State the conclusions and the assumptions. 
+
+
+## Load Data
+
+```{r}
+# load neccesary libraries
+library(ggplot2)
+library(datasets)
+library(gridExtra)
+library(GGally)
+
+# The Effect of Vitamin C on Tooth Growth in Guinea Pigs
+data(ToothGrowth)
+toothGrowth <- ToothGrowth 
+toothGrowth$dose <- as.factor(toothGrowth$dose) # convert to factor
+```
+
+
+## Basic Summary of the data
+```{r}
+str(toothGrowth)
+summary(toothGrowth)
+head(toothGrowth)
+
+table(toothGrowth$supp, toothGrowth$dose)
+```
+```{r echo=FALSE}
+p1 <- ggplot(data=toothGrowth, aes(x=dose,y=len,fill=dose), colour="#CC0000") +
+  geom_boxplot() + 
+  theme(legend.position="none") + 
+  facet_grid(.~supp) 
+
+p2 <- ggplot(data=toothGrowth, aes(x=supp,y=len,fill=supp)) +
+  geom_boxplot() + 
+  theme(legend.position="none") + 
+  facet_grid(.~dose) 
+
+p3 <- ggplot(data=toothGrowth, aes(x=supp,y=len,fill=supp)) +
+  geom_boxplot()
+
+p4 <- ggplot(data=toothGrowth, aes(x=dose,y=len,fill=dose)) +
+  geom_boxplot()
+
+grid.arrange(p1, p4, p2, p3, ncol = 2, nrow=2)
+
+#ggpairs(toothGrowth, 
+#        upper = list(continuous = "density", combo = "box"),
+#        lower = list(continuous="smooth"),        
+#        colour = "dose",
+#        axisLabels='show')
+```
+
+Analysis based on Analysis of Variance
+```{r}
+anova.out <- aov(len ~ supp * dose, data=toothGrowth)
+summary(anova.out)
+```
+
+The results show an interaction between the length and dosage (F(1,54)=15.572;p<0.01)
+Also a very clear effect on length by supplement type (F(2,54)=92;p<0.01). 
+Last but not least there is a minor interaction between the combination of supplement type  and dosage compared to the length(F(2,54)=4.107;p<0.05).
+
+```{r}
+TukeyHSD(anova.out)
+```
+
+The Tukey  analysis showsthe differences between each of the groups in supp and dose
+Only the interactions between VC:0.5-OJ:0.5; VC:1-OJ:0.5; OJ:2-OJ:1; VC:2-OJ:1 and VC:2-OJ:2  are not significant
+```{r}
+confint(anova.out)
+print(model.tables(anova.out,"means"),digits=3)
+```
+
+## Conclusions
+
+Indications that both the supplement as the dosage have indipendent effects on the length of teeth.
+Supplement type has a clear influence, but OJ has a greater avarage teethgrowth in combination with dosages 0.5 and 1 then for the VC supplement, while teeth length for the VC supplement vs the OJ in combiantion with dosage 2 has no significant effect (almost same mean & same confidence interval)
